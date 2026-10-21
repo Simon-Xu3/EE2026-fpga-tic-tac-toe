@@ -6,7 +6,7 @@
 // connections to their modules. Keep game, cursor, score and drawing logic
 // inside the modules below. Do not add a second copy of their state here.
 //
-// Common conventions (see EE2026_TicTacToe_TeamPlan.md, section 4):
+// Common conventions (see docs/EE2026_TicTacToe_TeamPlan.md, section 4):
 //   clk_6p25m        : one 6.25 MHz clock for all game and OLED modules
 //   rst              : active-high, synchronous game reset from Member A
 //   board[2*i +: 2] : cell i, 00 empty / 01 X / 10 O; i = 0..8

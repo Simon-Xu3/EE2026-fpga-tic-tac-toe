@@ -6,7 +6,31 @@
 
 本文是组内执行计划，不是 GPT-6 Proposal 或最终报告。成员姓名和 Group ID 尚未提供，暂用 A/B/C/D 和 `SX_YZ`；确定后替换即可。
 
-下文的 `.v` 文件名和端口是拟实现的设计约定，目前工作区还没有这些源代码；实际开发时按本文件建立模块。第 3 节逐个说明主模块、子模块、课程驱动和测试模块的功能。
+`src/top/My_Top_Module.v` 已建立，作为四人的顶层接线与端口约定。其余 `.v`、testbench 和 `.xdc` 文件仍按下述路径由负责人创建；课程提供的 `Oled_Display.v` 需由 D 加入。第 3 节逐个说明主模块、子模块、课程驱动和测试模块的功能。
+
+## 仓库目录与文件放置
+
+以下目录已建立。树中的顶层文件和 `docs` 文件已经存在；其余列出的 `.v`、`.xdc` 和 testbench 是各成员后续应创建的目标路径。
+
+```text
+EE2026-fpga-tic-tac-toe/
+├── README.md                         项目入口、目录和开发说明
+├── src/
+│   ├── top/My_Top_Module.v           B：已建立的顶层接线
+│   ├── input/                       A：button_event.v、input_controller.v
+│   ├── game/                        B：game_core.v
+│   ├── result_score/                C：result_detector.v、score_counter.v、
+│   │                                   sevenseg_driver.v、result_score_controller.v
+│   └── display/                     D：clock_gen.v、oled_renderer.v、课程 Oled_Display.v
+├── sim/                             四人的 tb_*.v、D 的 display_test_pattern.v
+├── constraints/                     D：Basys3_Master.xdc
+└── docs/
+    ├── EE2026_TicTacToe_TeamPlan.md 本文件
+    ├── EE2026 - Project Manual.pdf  课程手册
+    └── images/oled_x_wins_mockup.png 展示草图
+```
+
+`src/` 放可综合设计源码；`sim/` 放测试平台和预设画面，不加入最终综合源文件。`sim/display_test_pattern.v` 只用于 D 的独立测试，不在最终顶层实例化。各人只编辑自己负责的源文件；B 维护 `src/top/`，D 维护 `constraints/`。Vivado 添加文件时按上述相对路径选择，不复制出第二份源文件。
 
 ## 1. 共同确定的功能范围
 
@@ -34,7 +58,7 @@
 
 主模块：`input_controller.v`。
 
-负责文件：`button_event.v`、`input_controller.v`、`tb_input_controller.v`。
+负责文件：`src/input/button_event.v`、`src/input/input_controller.v`、`sim/tb_input_controller.v`。
 
 - 五个按键及开关输入的同步处理。
 - 按键消抖：快速响应首次按下，随后约 200 ms 屏蔽抖动；长按只算一次，释放后才能再次触发。
@@ -54,7 +78,7 @@
 
 主模块：`game_core.v`。
 
-负责文件：`game_core.v`、`tb_game_core.v`、`My_Top_Module.v` 的模块连接部分。
+负责文件：`src/game/game_core.v`、`sim/tb_game_core.v`、`src/top/My_Top_Module.v` 的模块连接部分。
 
 - 唯一负责九格棋盘寄存器的写入与清空。
 - 判断落子位置是否为空，接受合法落子，拒绝无效落子。
@@ -74,7 +98,7 @@
 
 主模块：`result_score_controller.v`。
 
-负责文件：`result_detector.v`、`score_counter.v`、`sevenseg_driver.v`、`result_score_controller.v`、`tb_result_score_controller.v`。
+负责文件：`src/result_score/result_detector.v`、`src/result_score/score_counter.v`、`src/result_score/sevenseg_driver.v`、`src/result_score/result_score_controller.v`、`sim/tb_result_score_controller.v`。
 
 - 对棋盘做组合逻辑分析，检测八条获胜线。
 - 输出获胜玩家、平局标志和 9-bit 获胜格子掩码。
@@ -93,7 +117,7 @@
 
 主模块：`oled_renderer.v`。
 
-负责文件：`oled_renderer.v`、`clock_gen.v` 或对应时钟 IP 配置、`tb_oled_renderer.v`、仅测试时使用的 `display_test_pattern.v`；作为 `Basys3_Master.xdc` 的唯一编辑人，维护时钟和板卡引脚约束，其他成员提供各自的引脚需求。
+负责文件：`src/display/oled_renderer.v`、`src/display/clock_gen.v` 或对应时钟 IP 配置、`sim/tb_oled_renderer.v`、仅测试时使用的 `sim/display_test_pattern.v`；负责接入课程提供的 `src/display/Oled_Display.v`，并作为 `constraints/Basys3_Master.xdc` 的唯一编辑人维护时钟和板卡引脚约束，其他成员提供各自的引脚需求。
 
 - 接入课程提供的 `Oled_Display.v`，使用其像素索引和输出接口。
 - 根据像素索引生成 x/y 坐标，绘制网格、X/O 和光标。
@@ -304,7 +328,7 @@ LED 采用固定约定：游戏进行中，`led[0]` 表示轮到 X，`led[1]` �
 
 SW15 只复位游戏和显示状态，不关闭公共时钟，否则复位同步和后续恢复都无法工作。A/B/C 的仿真可以直接提供 6.25 MHz 测试时钟，独立开发不依赖这个模块先完成。
 
-### 3.11 `Oled_Display.v`：课程提供的 OLED 设备驱动（接入归 D）
+### 3.11 `src/display/Oled_Display.v`：课程提供的 OLED 设备驱动（接入归 D）
 
 | 项目 | 功能约定 |
 | --- | --- |
@@ -316,7 +340,7 @@ SW15 只复位游戏和显示状态，不关闭公共时钟，否则复位同步
 
 本模块不理解井字棋规则，也不决定哪个格子画 X/O；它只负责把 D 给出的颜色发送到屏幕。使用课程提供的源码，原则上不修改驱动内部实现。实际开始接入时，应核对模板中的准确端口名称和复位要求。
 
-### 3.12 `display_test_pattern.v`：提供预设游戏画面（D，仅测试）
+### 3.12 `sim/display_test_pattern.v`：提供预设游戏画面（D，仅测试）
 
 | 项目 | 功能约定 |
 | --- | --- |
@@ -328,7 +352,7 @@ SW15 只复位游戏和显示状态，不关闭公共时钟，否则复位同步
 
 这个模块只生成测试数据，不承担真实的落子逻辑。独立 OLED 测试顶层可以将它接到 `oled_renderer`；最终 `My_Top_Module` 使用 A/B/C 的实际输出，不实例化此模块。
 
-### 3.13 `My_Top_Module.v`：最终系统接线与引脚入口（B 维护，四人核对）
+### 3.13 `src/top/My_Top_Module.v`：最终系统接线与引脚入口（B 维护，四人核对）
 
 | 项目 | 功能约定 |
 | --- | --- |
@@ -336,7 +360,7 @@ SW15 只复位游戏和显示状态，不关闭公共时钟，否则复位同步
 | 板上输出 | LED、七段数码管、OLED Pmod 引脚 |
 | 内部状态 | 不新增棋盘、光标或比分寄存器，数据分别由 A/B/C 唯一保存 |
 
-负责实例化层级图中的最终模块，传递公共时钟与复位，按信号表连接 A→B、B↔C、A/B/C→D 和 D↔OLED 驱动。所有板上输入输出在这里暴露，再由 `Basys3_Master.xdc` 映射到实际引脚。
+负责实例化层级图中的最终模块，传递公共时钟与复位，按信号表连接 A→B、B↔C、A/B/C→D 和 D↔OLED 驱动。所有板上输入输出在这里暴露，再由 `constraints/Basys3_Master.xdc` 映射到实际引脚。
 
 B 负责维护该文件，但 A/C/D 分别检查自己模块的端口、位宽、复位方向和连接是否正确。顶层不包含另一套游戏算法，也不保留测试棋盘选择逻辑。
 
@@ -346,14 +370,14 @@ Testbench 是仿真模块，没有需要连接到开发板的输入输出端口�
 
 | Testbench | 负责产生的输入 | 必须验证的输出和行为 |
 | --- | --- | --- |
-| `tb_input_controller.v`（A） | 按键抖动、短按、长按、同时按键、SW0/SW15、新一局与结束状态 | 每次操作只有一个事件；九格移动与边界正确；落子后光标保留；复位和换局回到中心；结束时输入规则正确 |
-| `tb_game_core.v`（B） | 预设选中格、落子请求、下一局请求、模拟胜负结果 | 棋盘只改一个格子；非法操作不换人；检查状态延迟正确；结束只发一次事件；结束后锁定；下一局清盘 |
-| `tb_result_score_controller.v`（C） | 空盘、进行中、八类 X/O 胜局、平局、最后一格获胜、结束脉冲和复位 | 结果与掩码正确；胜场只按结束事件更新；BCD 进位和饱和正确；LED 编码和数码管扫描正确 |
-| `tb_oled_renderer.v`（D） | 测试棋盘、各格光标、胜负结果、比分、错误脉冲，以及像素索引扫描 | 网格/背景/棋子/光标关键像素颜色正确；获胜高亮正确；错误提示持续时间正确；状态更新不修改游戏数据 |
+| `sim/tb_input_controller.v`（A） | 按键抖动、短按、长按、同时按键、SW0/SW15、新一局与结束状态 | 每次操作只有一个事件；九格移动与边界正确；落子后光标保留；复位和换局回到中心；结束时输入规则正确 |
+| `sim/tb_game_core.v`（B） | 预设选中格、落子请求、下一局请求、模拟胜负结果 | 棋盘只改一个格子；非法操作不换人；检查状态延迟正确；结束只发一次事件；结束后锁定；下一局清盘 |
+| `sim/tb_result_score_controller.v`（C） | 空盘、进行中、八类 X/O 胜局、平局、最后一格获胜、结束脉冲和复位 | 结果与掩码正确；胜场只按结束事件更新；BCD 进位和饱和正确；LED 编码和数码管扫描正确 |
+| `sim/tb_oled_renderer.v`（D） | 测试棋盘、各格光标、胜负结果、比分、错误脉冲，以及像素索引扫描 | 网格/背景/棋子/光标关键像素颜色正确；获胜高亮正确；错误提示持续时间正确；状态更新不修改游戏数据 |
 
 四人都可以在自己的 testbench 中直接构造其他模块的输出，不需要先运行完整游戏。最终集成时再共同验证真实模块之间的交互。
 
-### 3.15 `Basys3_Master.xdc`：公共约束文件，不是功能模块（D 维护）
+### 3.15 `constraints/Basys3_Master.xdc`：公共约束文件，不是功能模块（D 维护）
 
 为顶层时钟、按钮、开关、LED、数码管和 OLED 端口指定正确的物理引脚与 I/O 标准，并约束输入时钟和生成时钟。C 提供 LED/数码管端口需求，A 提供按钮/开关需求，B 提供最终顶层端口清单，由 D 统一修改文件。
 
@@ -538,7 +562,7 @@ Manual 第 1 页标明 Week 9 从 2026-10-12 开始，据此顺延：Week 10 为
 ## 8. 互不干扰的协作规则
 
 1. 每个寄存器、输出端口和源文件只有一个负责人；其他成员通过端口读取数据。
-2. 每个人只修改自己负责的文件。需要改变公共接口时，在组内同步后，由文件负责人修改。
+2. 每个人只修改自己负责的 `src/` 文件和对应的 `sim/tb_*.v`。需要改变公共接口时，在组内同步后，由文件负责人修改，并同步更新 `src/top/My_Top_Module.v` 和本文。
 3. A/B/C/D 均用假的输入完成独立验证，不能把“等别人模块完成”作为开始工作的条件。
 4. B 维护顶层连线，D 统一维护约束文件；其他成员提供自己端口的连接要求。公共配置有单一编辑人。
 5. 所有模块使用相同的编码、时钟和复位约定。修改接口后，同步更新本文件、testbench 和顶层连线。
