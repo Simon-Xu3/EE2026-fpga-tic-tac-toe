@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Vivado-generated data (keep source .v/.sv, .xdc, IP configuration and .xpr)
+.Xil/
+*.cache/
+*.gen/
+*.runs/
+*.sim/
+*.hw/
+*.ip_user_files/
+*.jou
+*.log
+
+# Local simulation output
+*.vcd
+*.wdb
