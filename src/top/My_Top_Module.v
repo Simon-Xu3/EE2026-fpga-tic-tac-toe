@@ -154,8 +154,8 @@ module My_Top_Module (
         .oled_data        (oled_data)
     );
 
-    // Course-supplied OLED driver. Member D must add Oled_Display.v to Vivado
-    // and verify these port names against that exact supplied source file.
+    // Course-supplied OLED driver. Member D must add Oled_Display.v to Vivado.
+    // Port names checked against the supplied Oled_Display.v (cs, sdin, sclk, ...).
     // The status outputs are intentionally unused by this design.
     Oled_Display u_oled_display (
         .clk                 (clk_6p25m),
@@ -165,13 +165,13 @@ module My_Top_Module (
         .frame_begin         (),
         .sending_pixels      (),
         .sample_pixel        (),
-        .pmodoledrgb_cs      (pmodoledrgb_cs),
-        .pmodoledrgb_sdin    (pmodoledrgb_sdin),
-        .pmodoledrgb_sclk    (pmodoledrgb_sclk),
-        .pmodoledrgb_d_cn    (pmodoledrgb_d_cn),
-        .pmodoledrgb_resn    (pmodoledrgb_resn),
-        .pmodoledrgb_vccen   (pmodoledrgb_vccen),
-        .pmodoledrgb_pmoden  (pmodoledrgb_pmoden)
+        .cs                  (pmodoledrgb_cs),
+        .sdin                (pmodoledrgb_sdin),
+        .sclk                (pmodoledrgb_sclk),
+        .d_cn                (pmodoledrgb_d_cn),
+        .resn                (pmodoledrgb_resn),
+        .vccen               (pmodoledrgb_vccen),
+        .pmoden              (pmodoledrgb_pmoden)
     );
 
 endmodule
