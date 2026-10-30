@@ -1,6 +1,103 @@
 `timescale 1ns / 1ps
 
-module oled_renderer (
+module oled_renderer #(
+    parameter integer INVALID_CYCLES = 3125000
+) (
+    input clk,
+    input rst,
+    input [12:0] pixel_index,
+    input [3:0] cursor_cell,
+    input [17:0] board,
+    input current_player,
+    input game_over,
+    input move_error_pulse,
+    input [1:0] winner,
+    input draw,
+    input [8:0] winning_mask,
+    input [7:0] score_x,
+    input [7:0] score_o,
+    output [15:0] oled_data
+);
+
+localparam integer TIMER_WIDTH = INVALID_CYCLES < 2 ? 1 : $clog2(INVALID_CYCLES + 1);
+reg [TIMER_WIDTH-1:0] invalid_timer;
+reg [17:0] frame_board;
+reg [3:0] frame_cursor;
+reg frame_player;
+reg frame_game_over;
+reg [1:0] frame_winner;
+reg frame_draw;
+reg [8:0] frame_mask;
+reg [6:0] frame_score_x;
+reg [6:0] frame_score_o;
+reg frame_invalid;
+
+function [6:0] bcd_to_binary;
+    input [7:0] bcd;
+    begin
+        if (bcd[7:4] > 9 || bcd[3:0] > 9)
+            bcd_to_binary = 99;
+        else
+            bcd_to_binary = bcd[7:4] * 7'd10 + bcd[3:0];
+    end
+endfunction
+
+always @(posedge clk) begin
+    if (rst || game_over || board == 18'd0)
+        invalid_timer <= 0;
+    else if (move_error_pulse)
+        invalid_timer <= INVALID_CYCLES;
+    else if (invalid_timer != 0)
+        invalid_timer <= invalid_timer - 1'b1;
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        frame_board <= 0;
+        frame_cursor <= 0;
+        frame_player <= 0;
+        frame_game_over <= 0;
+        frame_winner <= 0;
+        frame_draw <= 0;
+        frame_mask <= 0;
+        frame_score_x <= 0;
+        frame_score_o <= 0;
+        frame_invalid <= 0;
+    end else if (pixel_index == 0) begin
+        frame_board <= board;
+        frame_cursor <= cursor_cell;
+        frame_player <= current_player;
+        frame_game_over <= game_over;
+        frame_winner <= winner;
+        frame_draw <= draw;
+        frame_mask <= winning_mask;
+        frame_score_x <= bcd_to_binary(score_x);
+        frame_score_o <= bcd_to_binary(score_o);
+        frame_invalid <= !game_over && board != 0 &&
+                         (move_error_pulse || invalid_timer != 0);
+    end
+end
+
+oled_pixel_drawer pixels (
+    .pixel_index(pixel_index),
+    .board(frame_board),
+    .cursor(frame_cursor),
+    .current_player(frame_player),
+    .score_x(frame_score_x),
+    .score_o(frame_score_o),
+    .game_over(frame_game_over),
+    .winner(frame_winner),
+    .draw(frame_draw),
+    .winning_mask(frame_mask),
+    .invalid_flash(frame_invalid),
+    .oled_data(oled_data)
+);
+
+endmodule
+
+`timescale 1ns / 1ps
+
+module oled_pixel_drawer (
     input [12:0] pixel_index,
     input [17:0] board,
     input [3:0] cursor,

@@ -1,15 +1,14 @@
 `timescale 1ns / 1ps
 
 module clock_gen (
-    input clk100,
-    input reset,
-    output clk6p25m,
-    output locked
+    input clk100mhz,
+    output clk
 );
 
 wire feedback;
 wire feedback_buffered;
 wire clock_unbuffered;
+wire mmcm_locked;
 
 MMCME2_BASE #(
     .BANDWIDTH("OPTIMIZED"),
@@ -21,9 +20,9 @@ MMCME2_BASE #(
     .CLKOUT0_PHASE(0.0),
     .STARTUP_WAIT("FALSE")
 ) mmcm (
-    .CLKIN1(clk100),
+    .CLKIN1(clk100mhz),
     .CLKFBIN(feedback_buffered),
-    .RST(reset),
+    .RST(1'b0),
     .PWRDWN(1'b0),
     .CLKFBOUT(feedback),
     .CLKFBOUTB(),
@@ -38,10 +37,10 @@ MMCME2_BASE #(
     .CLKOUT4(),
     .CLKOUT5(),
     .CLKOUT6(),
-    .LOCKED(locked)
+    .LOCKED(mmcm_locked)
 );
 
 BUFG feedback_buf (.I(feedback), .O(feedback_buffered));
-BUFG clock_buf (.I(clock_unbuffered), .O(clk6p25m));
+BUFGCE clock_buf (.I(clock_unbuffered), .CE(mmcm_locked), .O(clk));
 
 endmodule
