@@ -26,16 +26,18 @@ module game_core (
     reg [1:0] state;
 
     wire [17:0] shifted = board >> (2 * cursor_cell); // cell i at bits [2i+1:2i]
+    // e.g. cursor 4: 00 00 00 00 01 00 00 00 10 >> 8 = 00 00 00 00 00 00 00 00 01, cell 4 now at [1:0]
     wire [1:0] cell_val = shifted[1:0]; // 01 X, 10 O
     wire cell_empty = (cursor_cell <= 4'd8) && (cell_val == 2'b00); // 2'b00 -> can choose here
     wire [1:0] my_mark = current_player ? 2'b10 : 2'b01;
-    wire [17:0] mark_shift = {16'd0, my_mark} << (2 * cursor_cell); // Update code
+    wire [17:0] mark_shift = {16'd0, my_mark} << (2 * cursor_cell); // my_mark moved to the cursor cell
+    // e.g. X at cursor 4: 00 00 00 00 00 00 00 00 01 << 8 = 00 00 00 00 01 00 00 00 00
 
     always @(posedge clk) begin
         move_ok_pulse <= 1'b0;
         move_error_pulse <= 1'b0;
-        round_start <= 1'b0; // mouse at centre
-        round_done <= 1'b0;  // Add 1 mark
+        round_start <= 1'b0; // tells A to put cursor back to centre
+        round_done <= 1'b0;  // tells C to add 1 to the score
 
         // Reset
         if (rst) begin
