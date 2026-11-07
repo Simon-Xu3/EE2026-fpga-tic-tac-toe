@@ -1,7 +1,5 @@
 `timescale 1ns / 1ps
 
-// Simulation only. Timing is shortened; production defaults remain unchanged.
-// AI-assisted tests for the team's Member A input interface.
 module tb_input_controller;
     reg clk = 0;
     always #80 clk = ~clk; // 6.25 MHz
@@ -52,7 +50,6 @@ module tb_input_controller;
         previous_new = new_round_req;
     end
 
-    // Drive on falling edges, away from the DUT's rising-edge registers.
     task cycles;
         input integer count;
         begin
@@ -84,9 +81,9 @@ module tb_input_controller;
         input [5:0] pressed;
         begin
             buttons = pressed;
-            cycles(12); // Longer than one sample, shorter than lockout.
+            cycles(12); 
             buttons = 0;
-            cycles(80); // Lockout and stable release must both complete.
+            cycles(80); 
         end
     endtask
 
@@ -138,7 +135,6 @@ module tb_input_controller;
         check_cursor(4);
         check_counts(0, 0);
 
-        // Every direction from every cell: includes all boundaries/no wrapping.
         for (position = 0; position < 9; position = position + 1) begin
             for (direction = 0; direction < 4; direction = direction + 1) begin
                 go_to(position);
@@ -155,11 +151,10 @@ module tb_input_controller;
             before_place = placements;
             before_new = new_rounds;
             tap(6'b010000);
-            check_cursor(position); // Placing never moves the cursor.
+            check_cursor(position); 
             check_counts(before_place + 1, before_new);
         end
 
-        // Exhaust all 31 combinations of the five pushbuttons.
         for (mask = 1; mask < 32; mask = mask + 1) begin
             centre_cursor;
             before_place = placements;
@@ -178,7 +173,6 @@ module tb_input_controller;
             end
         end
 
-        // Press bouncing, followed by a hold much longer than the lockout.
         before_place = placements;
         before_new = new_rounds;
         buttons = 6'b010000;
@@ -190,7 +184,6 @@ module tb_input_controller;
         cycles(1000);
         check_counts(before_place + 1, before_new);
 
-        // Short/bouncing releases must not rearm the button.
         repeat (5) begin
             buttons = 0; cycles(7);
             buttons = 6'b010000; cycles(8);
@@ -201,7 +194,6 @@ module tb_input_controller;
         tap(6'b010000);
         check_counts(before_place + 2, before_new);
 
-        // After game_over, movement/placement are discarded; SW0 still works.
         centre_cursor;
         game_over = 1;
         before_place = placements;
@@ -212,7 +204,6 @@ module tb_input_controller;
         tap(6'b100000);
         check_counts(before_place, before_new + 1);
 
-        // A button consumed during game_over is not replayed when it ends.
         buttons = 6'b010000;
         cycles(100);
         game_over = 0;
@@ -221,12 +212,10 @@ module tb_input_controller;
         buttons = 0;
         cycles(80);
 
-        // SW0 also emits an event during play; the game core decides validity.
         tap(6'b110000);
         check_counts(before_place + 1, before_new + 2);
         check_cursor(4);
 
-        // A new round overrides coincident placement and next-round events.
         before_place = placements;
         before_new = new_rounds;
         buttons = 6'b110000;
@@ -242,7 +231,7 @@ module tb_input_controller;
         go_to(8);
         centre_cursor;
         game_over = 1;
-        reset_system; // SW15 works even when the game is over.
+        reset_system; 
         game_over = 0;
 
         // Inputs held throughout reset cannot generate phantom presses.

@@ -1,10 +1,6 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-// Member A: synchronized reset, button events and the 3x3 cursor.
-// clk MUST be the common 6.25 MHz clock, not the raw 100 MHz board clock.
-// Port names match the team's My_Top_Module.v.
-// AI-assisted implementation; record this assistance in the project report.
 module input_controller #(
     parameter integer CLK_HZ          = 6250000,
     parameter integer SAMPLE_CYCLES   = CLK_HZ / 1000,
@@ -27,8 +23,6 @@ module input_controller #(
     output reg        new_round_req
 );
 
-    // FPGA configuration initializes both stages high, holding the system
-    // in reset at startup. This synchronizer never resets itself with rst.
     (* ASYNC_REG = "TRUE" *) reg sw15_meta = 1'b1;
     (* ASYNC_REG = "TRUE" *) reg sw15_sync = 1'b1;
 
@@ -39,8 +33,6 @@ module input_controller #(
 
     assign rst = sw15_sync;
 
-    // Six independent channels, from bit 0 to bit 5:
-    // up, down, left, right, centre, SW0.
     wire [5:0] raw_keys;
     wire [5:0] key_pulses;
     assign raw_keys = {sw0_async, btnC, btnR, btnL, btnD, btnU};
@@ -75,13 +67,9 @@ module input_controller #(
         end else if (round_start) begin
             cursor_cell <= 4'd4;
         end else begin
-            // SW0 remains usable after game_over. Member B decides whether
-            // to accept the request; this module never clears the board.
             new_round_req <= key_pulses[5];
 
             if (!game_over) begin
-                // Event priority: centre, up, down, left, right.
-                // Lower-priority simultaneous events are consumed, not queued.
                 if (key_pulses[4]) begin
                     place_req <= 1'b1;
                 end else if (key_pulses[0]) begin
