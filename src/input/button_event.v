@@ -1,11 +1,8 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-// Convert an active-high physical input into one clock-cycle event.
 // Defaults: 6.25 MHz clock, 1 ms sampling, 200 ms lockout,
 // and approximately 20 ms of stable release before another press.
-// All timing parameters must be positive; shorten them in a testbench.
-// AI-assisted implementation; record this assistance in the project report.
 module button_event #(
     parameter integer CLK_HZ          = 6250000,
     parameter integer SAMPLE_CYCLES   = CLK_HZ / 1000,
@@ -34,8 +31,6 @@ module button_event #(
 
     wire sample_tick = (sample_count == SAMPLE_CYCLES - 1);
 
-    // Two-stage synchronizer. Reset to "pressed" so a button held during
-    // reset cannot look like a release and cause a phantom new press.
     always @(posedge clk) begin
         if (rst) begin
             key_meta <= 1'b1;
@@ -54,7 +49,6 @@ module button_event #(
             armed         <= 1'b0;
             key_pulse     <= 1'b0;
         end else begin
-            // Pulses last one system clock, rather than one sample interval.
             key_pulse <= 1'b0;
 
             if (sample_tick)
@@ -66,7 +60,6 @@ module button_event #(
                 lockout_count <= lockout_count - 1'b1;
                 release_count <= 0;
             end else if (armed) begin
-                // Report the FIRST sampled press without waiting 200 ms.
                 if (sample_tick && key_sync) begin
                     key_pulse     <= 1'b1;
                     armed         <= 1'b0;
@@ -74,8 +67,6 @@ module button_event #(
                     release_count <= 0;
                 end
             end else begin
-                // Any synchronized high level interrupts release confirmation,
-                // even when it occurs between the slower sample ticks.
                 if (key_sync) begin
                     release_count <= 0;
                 end else if (sample_tick) begin
